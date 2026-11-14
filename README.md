@@ -28,9 +28,12 @@ El prototipo se basa en los diseños de la carpeta [`docs/`](docs/):
 
 **Como dueño de la tienda** (enlace "Panel del dueño" al pie de la página)
 - Correo `dueno@urbano.cl` · contraseña `dueno123` (solo para la demostración).
-- Subir, editar y borrar productos; cambiar precios y ofertas; subir fotos arrastrándolas desde el escritorio.
-- Editar los banners de la portada.
-- Ver pedidos, mensajes de clientas y suscripciones al boletín.
+- **Resumen:** al entrar ve de un vistazo pedidos por preparar, productos agotados o con poco stock, mensajes y ventas, más una guía de "¿Qué quieres hacer?".
+- **Inventario:** cantidad por talla con botones **+** y **−** (o escribiendo el número); se guarda solo. Filtros "Poco stock" y "Agotados".
+- La tienda respeta el stock: tallas en 0 aparecen agotadas, avisa "¡Quedan solo N!", no deja comprar más de lo que hay y cada compra descuenta unidades.
+- **Pedidos:** cambiar el estado (Recibido, En preparación, Enviado / Listo para retiro, Entregado, Cancelado). La clienta lo ve en "Mis pedidos" y al cancelar las unidades vuelven al inventario.
+- Subir, editar, ocultar y borrar productos; cambiar precios, ofertas y stock; subir fotos arrastrándolas desde el escritorio.
+- Editar los banners de la portada y ver mensajes de clientas y suscripciones al boletín.
 
 ## Cómo abrirlo en el computador
 
@@ -38,7 +41,7 @@ No necesita instalar nada: descarga el proyecto y abre `index.html` con el naveg
 
 ## Pruebas automáticas
 
-`pruebas.js` contiene 122 pruebas (navegación, búsqueda, carrito, cupones, registro, pago, panel del dueño, intentos de inyectar código y una prueba con 400 acciones al azar).
+`pruebas.js` contiene 148 pruebas (navegación, búsqueda, carrito, cupones, registro, pago, stock e inventario, estados de pedido, panel del dueño, intentos de inyectar código y una prueba con 400 acciones al azar).
 
 1. Abre la tienda en el navegador.
 2. Presiona `F12` y entra a la pestaña **Consola**.

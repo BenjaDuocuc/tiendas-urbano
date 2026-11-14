@@ -299,6 +299,52 @@ label select{padding:12px 14px;border:1px solid var(--line);border-radius:12px;b
 .msg:last-child{border-bottom:0}
 .msg p{margin:6px 0 0;white-space:pre-wrap}
 .adbuscar{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--line);border-radius:999px;font:inherit}
+/* Stock y panel del dueño */
+.tag.gris{background:#6b7280}
+.pcard.sin-stock .pimg img{filter:grayscale(.6);opacity:.75}
+.chip-st{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px}
+.chip-st.ok{background:#ecfdf3;color:#166534}
+.chip-st.poco{background:#fff4d6;color:#9a6700}
+.chip-st.agotado{background:#fee2e2;color:#b91c1c}
+.chip-st.oculto{background:#eef0f5;color:#4b5563}
+.arow.apagado{opacity:.6}
+.rgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.rcard{display:grid;gap:2px;text-align:left;background:#fff;border:2px solid var(--line);border-radius:16px;padding:16px;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.rcard b{font-size:28px;color:var(--navy);line-height:1.1}
+.rcard span{font-size:14px;color:var(--muted)}
+.rcard em{font-style:normal;font-size:13px;font-weight:700;color:var(--blue);margin-top:6px}
+.rcard.alerta{border-color:#f5c451;background:#fffbeb}
+.rcard.peligro{border-color:#f5a3a3;background:#fff5f5}
+.rcard.peligro b{color:#b91c1c}
+.guia ul{margin:6px 0 0;padding-left:18px;display:grid;gap:8px;line-height:1.5}
+.inv{align-items:center}
+.inv-info{min-width:160px}
+.inv-tallas{display:flex;flex-wrap:wrap;gap:8px}
+.stcell{display:grid;gap:2px;justify-items:center}
+.stcell small{font-size:11px;color:var(--muted);font-weight:600}
+.stctl{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.stctl button{width:34px;height:38px;border:0;background:#f5f2f8;color:var(--navy);font-size:18px;font-weight:700}
+.stctl button:hover{background:var(--pink)}
+.stctl input{width:46px;height:38px;border:0;text-align:center;font:inherit;font-weight:700;-moz-appearance:textfield}
+.stctl input::-webkit-outer-spin-button,.stctl input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stctl input.cero{color:#b91c1c;background:#fff5f5}
+.stbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin:0}
+.stbox legend{font-weight:700;font-size:14px;padding:0 6px}
+.stgrid{display:flex;flex-wrap:wrap;gap:10px}
+.stfield{display:grid;gap:4px;font-size:13px;width:74px}
+.stfield input{padding:10px;text-align:center}
+.ped{border-bottom:1px solid var(--line);padding:12px 0;display:grid;gap:8px}
+.ped:last-child{border-bottom:0}
+.ped-top{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.ped-estado{display:flex;align-items:center;gap:8px;font-size:13px}
+.ped-estado select{padding:8px 10px;border-radius:10px;font-weight:700;border:1px solid var(--line)}
+.ped summary{cursor:pointer;color:var(--blue);font-size:13px;font-weight:600}
+.e-nuevo{background:#e8efff !important;color:#1d4ed8 !important}
+.e-prep{background:#fff4d6 !important;color:#9a6700 !important}
+.e-env{background:#f3e8ff !important;color:#7e22ce !important}
+.e-ok{background:#ecfdf3 !important;color:#166534 !important}
+.e-can{background:#fee2e2 !important;color:#b91c1c !important}
+@media (min-width:900px){ .rgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
 /* Toast */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:999px;z-index:50;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:90vw;text-align:center}
 /* Responsive */
@@ -564,19 +610,59 @@ const cartCount = () => S.cart.reduce((a, i) => a + i.qty, 0);
 /* Prototipo: basta con un correo con @ (puede ser falso) */
 const emailOk = e => /^[^\s@]+@[^\s@]+$/.test(e);
 const enc = s => encodeURIComponent(s);
-/* Tallas: los accesorios tienen talla única; algunas tallas aparecen agotadas (simulación de stock) */
+/* ===================== STOCK =====================
+   Cada producto guarda cuántas unidades hay por talla: p.stock = {XS: 3, S: 0, ...}
+   Los accesorios tienen talla única: p.stock = {Única: 5}. El dueño lo cambia en Panel → Inventario. */
 const sizesOf = p => p.tipo === 'Accesorios' ? ['Única'] : SIZES;
-const sizeOk = (p, s) => sizesOf(p).includes(s) && (s === 'Única' || ((p.id * 3 + SIZES.indexOf(s) * 5) % 7) !== 0);
-const MAXQ = 10;   /* máximo de unidades por producto y talla */
+const POCO = 3;      /* desde cuántas unidades se considera "poco stock" */
+const MAXQ = 10;     /* máximo de unidades por producto y talla en un mismo carrito */
 const ENVIO_GRATIS = 30000, COSTO_ENVIO = 3990;
-/* Agrega al carrito sin pasar del máximo. Devuelve cuántas unidades se agregaron. */
+/* Stock inicial de ejemplo, para que el prototipo tenga tallas agotadas y con pocas unidades */
+function stockInicial(p){
+  const st = {};
+  sizesOf(p).forEach((s, i) => {
+    if (s === 'Única') { st[s] = p.id % 6 === 0 ? 2 : 4 + (p.id % 9); return; }
+    const agotada = ((p.id * 3 + i * 5) % 7) === 0;
+    st[s] = agotada ? 0 : (p.id % 6 === 0 ? 1 + (i % 2) : 2 + ((p.id * 7 + i * 3) % 12));
+  });
+  return st;
+}
+/* Deja el stock de un producto ordenado según sus tallas (sirve para datos antiguos o si cambia de categoría) */
+function prepararStock(p){
+  const viejo = p.stock || {}, ini = stockInicial(p), nuevo = {};
+  sizesOf(p).forEach(s => {
+    const n = Number(viejo[s]);
+    nuevo[s] = p.stock && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : ini[s];
+  });
+  p.stock = nuevo;
+  return p;
+}
+PRODUCTS.forEach(prepararStock);
+const stockDe = (p, s) => (p && p.stock && p.stock[s]) || 0;
+const stockTotal = p => sizesOf(p).reduce((a, s) => a + stockDe(p, s), 0);
+const sizeOk = (p, s) => sizesOf(p).includes(s) && stockDe(p, s) > 0;
+const enCarroDe = (id, s) => S.cart.filter(i => i.id === id && (!s || i.size === s)).reduce((a, i) => a + i.qty, 0);
+/* Cuántas unidades más se pueden agregar de una talla (según stock y máximo por carrito) */
+const maxAgregable = (p, s) => Math.max(0, Math.min(MAXQ, stockDe(p, s)) - enCarroDe(p.id, s));
+/* Lo que ven las clientas: los productos ocultos por el dueño no aparecen */
+const visibles = () => PRODUCTS.filter(p => !p.oculto);
+/* Estado del stock para mostrar en el panel */
+function estadoStock(p){
+  const t = stockTotal(p);
+  if (!t) return {cls: 'agotado', txt: 'Agotado'};
+  if (t <= POCO || sizesOf(p).some(s => stockDe(p, s) > 0 && stockDe(p, s) <= 1)) return {cls: 'poco', txt: 'Poco stock'};
+  return {cls: 'ok', txt: 'Con stock'};
+}
+/* Agrega al carrito sin pasar del stock ni del máximo. Devuelve cuántas unidades se agregaron. */
 function addCart(id, size, qty){
+  const p = prodById(id);
+  const n = Math.min(qty, maxAgregable(p, size));
+  if (n <= 0) return 0;
   let it = S.cart.find(i => i.id === id && i.size === size);
   if (!it) { it = {id, size, qty: 0}; S.cart.push(it); }
-  const antes = it.qty;
-  it.qty = Math.min(MAXQ, it.qty + qty);
+  it.qty += n;
   save();
-  return it.qty - antes;
+  return n;
 }
 /* Búsqueda sin importar tildes ni mayúsculas ("pantalon" encuentra "Pantalón") */
 const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
@@ -636,7 +722,7 @@ function filtrar(qs){
   const talla = qs.get('talla'), max = Number(qs.get('max')) || 0, color = qs.get('color'), orden = qs.get('orden');
   /* Cada palabra buscada debe aparecer (en cualquier orden) */
   const palabras = norm(qs.get('q') || '').split(/\s+/).filter(Boolean);
-  let list = PRODUCTS.filter(p =>
+  let list = visibles().filter(p =>
     (!tipo || p.tipo === tipo) &&
     (!palabras.length || palabras.every(w => norm(p.name + ' ' + p.tipo + ' ' + p.color + ' ' + p.marca).includes(w))) &&
     (!oferta || disc(p) > 0) &&
@@ -646,15 +732,17 @@ function filtrar(qs){
   if (orden === 'precio-asc') list.sort((a, b) => a.price - b.price);
   if (orden === 'precio-desc') list.sort((a, b) => b.price - a.price);
   if (orden === 'descuento') list.sort((a, b) => disc(b) - disc(a));
+  /* Los agotados van al final (el orden entre ellos se mantiene) */
+  list = list.filter(p => stockTotal(p) > 0).concat(list.filter(p => !stockTotal(p)));
   return list;
 }
 
 /* ===================== COMPONENTES ===================== */
 function card(p){
-  const d = disc(p), fav = S.fav.includes(p.id);
-  return `<article class="pcard">
+  const d = disc(p), fav = S.fav.includes(p.id), agotado = !stockTotal(p);
+  return `<article class="pcard ${agotado ? 'sin-stock' : ''}">
     <a class="pimg" href="#/producto?id=${p.id}" style="background:${p.bg}">
-      ${d ? `<span class="tag">-${d}%</span>` : ''}
+      ${agotado ? '<span class="tag gris">Agotado</span>' : d ? `<span class="tag">-${d}%</span>` : ''}
       ${pic(p)}
     </a>
     <button class="heart ${fav ? 'on' : ''}" data-act="fav" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Quitar de' : 'Guardar en'} favoritos: ${esc(p.name)}">${svg('heart')}</button>
@@ -662,7 +750,7 @@ function card(p){
       <span class="brand">${esc(p.marca)}</span>
       <h4><a href="#/producto?id=${p.id}">${esc(p.name)}</a></h4>
       <div class="prices"><b>${fmt(p.price)}</b>${p.old ? `<s>${fmt(p.old)}</s>` : ''}</div>
-      <a class="btn sm" href="#/producto?id=${p.id}">${svg('cart')} Agregar</a>
+      <a class="btn sm ${agotado ? 'ghost' : ''}" href="#/producto?id=${p.id}">${agotado ? 'Ver producto' : svg('cart') + ' Agregar'}</a>
     </div>
   </article>`;
 }
@@ -706,7 +794,7 @@ function sugerir(input){
   const q = norm(input.value);
   if (q.length < 2) { box.hidden = true; input.setAttribute('aria-expanded', 'false'); return; }
   const palabras = q.split(/\s+/);
-  const prods = PRODUCTS.filter(p => palabras.every(w => norm(p.name + ' ' + p.tipo + ' ' + p.color).includes(w))).slice(0, 5);
+  const prods = visibles().filter(p => palabras.every(w => norm(p.name + ' ' + p.tipo + ' ' + p.color).includes(w))).slice(0, 5);
   const cats = CATS.filter(c => norm(c.t).includes(q)).slice(0, 2);
   box.innerHTML = cats.map(c => `<a role="option" href="#/catalogo?tipo=${enc(c.t)}">${svg('grid')}<span>Categoría: <b>${esc(c.t)}</b></span></a>`).join('')
     + prods.map(p => `<a role="option" href="#/producto?id=${p.id}"><span class="sthumb" style="background:${p.bg}">${pic(p)}</span><span>${esc(p.name)}<small>${fmt(p.price)}</small></span></a>`).join('')
@@ -794,12 +882,13 @@ function marcarVisto(id){
   S.vistos = [id, ...(S.vistos || []).filter(x => x !== id)].slice(0, 8);
   save();
 }
-const vistos = excluir => (S.vistos || []).filter(id => id !== excluir).map(prodById).filter(Boolean);
+const vistos = excluir => (S.vistos || []).filter(id => id !== excluir).map(prodById).filter(p => p && !p.oculto);
 
 function homePage(){
   const cats = CATS.map(c => `<a class="circ" href="#/catalogo?tipo=${enc(c.t)}"><span class="cimg" style="background:${c.bg}"><img src="${c.img}" alt="${esc(c.t)}" loading="lazy" onerror="this.remove()"></span>${c.t}</a>`).join('');
-  const destacados = (PRODUCTS.some(p => p.destacado) ? PRODUCTS.filter(p => p.destacado) : PRODUCTS).slice(0, 4);
-  const ofertas = PRODUCTS.filter(p => disc(p) > 0 && !destacados.includes(p)).sort((a, b) => disc(b) - disc(a)).slice(0, 4);
+  const vis = visibles();
+  const destacados = (vis.some(p => p.destacado) ? vis.filter(p => p.destacado) : vis).slice(0, 4);
+  const ofertas = vis.filter(p => disc(p) > 0 && stockTotal(p) > 0 && !destacados.includes(p)).sort((a, b) => disc(b) - disc(a)).slice(0, 4);
   const lista = CATS.map(c => `<a href="#/catalogo?tipo=${enc(c.t)}"><img src="${c.img}" alt="" loading="lazy" onerror="this.remove()">${c.t}<span class="chev">›</span></a>`).join('');
   return `<div class="home">
     <aside class="home-left">
@@ -887,17 +976,24 @@ function catalogPage(qs){
 }
 function productoPage(qs){
   const p = prodById(Number(qs.get('id')));
-  if (!p) return `<div class="empty"><p>Producto no encontrado.</p><a class="btn" href="#/catalogo">Volver al catálogo</a></div>`;
+  if (!p || p.oculto) return `<div class="empty"><p>${p ? 'Este producto no está disponible por ahora.' : 'Producto no encontrado.'}</p><a class="btn" href="#/catalogo">Volver al catálogo</a></div>`;
   if (pId !== p.id) {
     pId = p.id; pQty = 1; pAdded = false;
     pSize = sizesOf(p).length === 1 ? sizesOf(p)[0] : '';   /* talla única: ya elegida */
     marcarVisto(p.id);
   }
-  const pocas = p.id % 6 === 0;   /* simulación: algunos productos con pocas unidades */
   const d = disc(p), fav = S.fav.includes(p.id), unica = sizesOf(p).length === 1;
+  const total = stockTotal(p), agotado = !total;
+  if (pSize && !sizeOk(p, pSize) && !unica) pSize = '';          /* la talla elegida se agotó */
+  const puede = pSize && sizeOk(p, pSize) ? maxAgregable(p, pSize) : 0;
+  pQty = Math.max(1, Math.min(pQty, puede || 1));
+  const quedan = pSize ? stockDe(p, pSize) : total;
+  const aviso = agotado ? '<div class="pocas">Producto agotado por ahora. ¡Vuelve pronto!</div>'
+    : quedan <= POCO ? `<div class="pocas">¡Quedan solo ${quedan} ${quedan === 1 ? 'unidad' : 'unidades'}${pSize && !unica ? ' en talla ' + pSize : ''}!</div>` : '';
+  const textoBoton = agotado ? 'Agotado' : !pSize ? 'Elige una talla' : !puede ? 'Ya tienes todo el stock en tu carrito' : 'Agregar al carrito';
   const enCarro = S.cart.filter(i => i.id === p.id).reduce((a, i) => a + i.qty, 0);
   const sizes = sizesOf(p).map(s => `<button class="size ${pSize === s ? 'on' : ''}" ${sizeOk(p, s) ? '' : 'disabled aria-disabled="true"'} data-act="talla" data-s="${s}" aria-pressed="${pSize === s}" aria-label="Talla ${s}${sizeOk(p, s) ? '' : ' (agotada)'}">${s}</button>`).join('');
-  const rel = PRODUCTS.filter(x => x.tipo === p.tipo && x.id !== p.id).slice(0, 4);
+  const rel = visibles().filter(x => x.tipo === p.tipo && x.id !== p.id && stockTotal(x) > 0).slice(0, 4);
   return `<nav class="crumbs"><a href="#/inicio">Inicio</a> / <a href="#/catalogo?tipo=${enc(p.tipo)}">${esc(p.tipo)}</a> / ${esc(p.name)}</nav>
     <div class="pdp">
       <div class="pdp-img" style="background:${p.bg}" ${p.img ? `data-act="verFoto" role="button" tabindex="0" aria-label="Ver foto de ${esc(p.name)} en grande"` : ''}>${d ? `<span class="tag" style="top:14px;left:14px">-${d}%</span>` : ''}${pic(p)}${p.img ? `<span class="zoom">${svg('search')} Ver en grande</span>` : ''}</div>
@@ -907,20 +1003,20 @@ function productoPage(qs){
         <div class="muted">Color: ${esc(p.color)}</div>
         <div class="price-big">${fmt(p.price)}${p.old ? `<s>${fmt(p.old)}</s>` : ''}</div>
         <div class="muted">${d ? `Ahorras ${fmt(p.old - p.price)} · ` : ''}Impuestos incluidos</div>
-        ${pocas ? '<div class="pocas">¡Últimas unidades disponibles!</div>' : ''}
+        ${aviso}
         <h4 style="margin:18px 0 6px">${unica ? 'Talla única' : 'Talla' + (pSize ? ': ' + pSize : '')}</h4>
         ${unica ? '' : `<div class="sizes">${sizes}</div>
         <p class="muted" style="margin:6px 0 0">Las tallas tachadas están agotadas.</p>`}
         <div class="qtyrow">
           <span class="muted">Cantidad</span>
-          <div class="qty"><button data-act="pqty" data-d="-1" aria-label="Menos" ${pQty <= 1 ? 'disabled' : ''}>−</button><span aria-live="polite">${pQty}</span><button data-act="pqty" data-d="1" aria-label="Más" ${pQty >= MAXQ ? 'disabled' : ''}>+</button></div>
+          <div class="qty"><button data-act="pqty" data-d="-1" aria-label="Menos" ${pQty <= 1 ? 'disabled' : ''}>−</button><span aria-live="polite">${pQty}</span><button data-act="pqty" data-d="1" aria-label="Más" ${pQty >= puede ? 'disabled' : ''}>+</button></div>
           ${enCarro ? `<span class="muted">Ya tienes ${enCarro} en el carrito</span>` : ''}
         </div>
         <div class="btnrow">
-          <button class="btn" style="flex:1" data-act="agregarPdp" ${pSize ? '' : 'disabled'}>${svg('cart')} ${pSize ? 'Agregar al carrito' : 'Elige una talla'}</button>
+          <button class="btn" style="flex:1" data-act="agregarPdp" ${puede ? '' : 'disabled'}>${svg('cart')} ${textoBoton}</button>
           <button class="btn ghost" data-act="fav" data-id="${p.id}" aria-pressed="${fav}">${svg('heart')} ${fav ? 'En favoritos' : 'Favorito'}</button>
         </div>
-        <button class="btn ghost full" style="margin-top:10px" data-act="comprarYa" ${pSize ? '' : 'disabled'}>Comprar ahora</button>
+        <button class="btn ghost full" style="margin-top:10px" data-act="comprarYa" ${puede || (pSize && enCarroDe(p.id, pSize)) ? '' : 'disabled'}>Comprar ahora</button>
         ${pAdded ? `<div class="added">${svg('check')} Agregado al carrito · <a href="#/carrito">Ver carrito</a></div>` : ''}
         <div class="benefits" style="margin-top:16px">
           <div>${svg('truck')} Envío gratis desde $30.000 o retiro en tienda sin costo</div>
@@ -970,7 +1066,7 @@ function cartPage(){
         <div class="muted">Talla ${esc(i.size)} · ${esc(p.color)}</div>
         <div class="prices"><b>${fmt(p.price * i.qty)}</b>${i.qty > 1 ? ` <span class="muted">(${fmt(p.price)} c/u)</span>` : ''}</div>
         <div class="qty-sm">
-          <button data-act="qty" data-id="${i.id}" data-size="${esc(i.size)}" data-d="-1" aria-label="Quitar una unidad">−</button><span aria-live="polite">${i.qty}</span><button data-act="qty" data-id="${i.id}" data-size="${esc(i.size)}" data-d="1" aria-label="Agregar una unidad" ${i.qty >= MAXQ ? 'disabled' : ''}>+</button>
+          <button data-act="qty" data-id="${i.id}" data-size="${esc(i.size)}" data-d="-1" aria-label="Quitar una unidad">−</button><span aria-live="polite">${i.qty}</span><button data-act="qty" data-id="${i.id}" data-size="${esc(i.size)}" data-d="1" aria-label="Agregar una unidad" ${i.qty >= Math.min(MAXQ, stockDe(p, i.size)) ? 'disabled' : ''}>+</button>
         </div>
       </div>
       <button class="trash" data-act="rm" data-id="${i.id}" data-size="${esc(i.size)}" aria-label="Eliminar ${esc(p.name)} del carrito">${svg('trash')}</button>
@@ -1117,7 +1213,7 @@ function accountPage(){
     </div>
     <h3>Mis pedidos</h3>
     <div class="card">${pedidos.length ? pedidos.map(o => `<details class="ord-d">
-        <summary class="ord"><span><b>${esc(o.id)}</b> <span class="estado">En preparación</span><br><span class="muted">${esc(o.fecha)} · ${esc(METODOS[o.metodo] || '')} · ${o.retiro ? 'Retiro en tienda' : 'Despacho'}</span></span><b>${fmt(o.total)}</b></summary>
+        <summary class="ord"><span><b>${esc(o.id)}</b> <span class="estado ${claseEstado(o.estado || 'Recibido')}">${esc(o.estado || 'Recibido')}</span><br><span class="muted">${esc(o.fecha)} · ${esc(METODOS[o.metodo] || '')} · ${o.retiro ? 'Retiro en tienda' : 'Despacho'}</span></span><b>${fmt(o.total)}</b></summary>
         <div class="ord-items">${(o.items || []).map(it => `<div class="line"><span>${esc(it.nombre)} · Talla ${esc(it.talla)} × ${it.qty}</span><span>${it.precio ? fmt(it.precio * it.qty) : ''}</span></div>`).join('')}</div>
       </details>`).join('')
       : '<p class="muted" style="margin:0">Aún no tienes pedidos. <a class="linkbtn" href="#/catalogo">Ir a comprar</a></p>'}</div>
@@ -1198,7 +1294,7 @@ function contactoPage(){
 /* ===================== PANEL DEL DUEÑO ===================== */
 /* Cuenta de demostración del dueño (en una tienda real sería una contraseña privada) */
 const DUENO = {email:'dueno@urbano.cl', pass:'dueno123'};
-let AD = {tab:'productos', edit:null};   /* edit: null (lista) | 'nuevo' | id de producto */
+let AD = {tab:'resumen', edit:null, filtro:'todos'};   /* edit: null (lista) | 'nuevo' | id de producto */
 let fotoNueva = null;                    /* foto elegida en el formulario de producto */
 let slideFotos = {};                     /* fotos elegidas para los banners */
 let adminErr = '';
@@ -1238,34 +1334,156 @@ function adminLoginPage(){
     <p class="muted" style="margin-top:12px">Pídele el correo y la contraseña al responsable de la tienda.</p>
   </div>`;
 }
+const ESTADOS = ['Recibido', 'En preparación', 'Enviado', 'Listo para retiro', 'Entregado', 'Cancelado'];
+const claseEstado = e => ({'Recibido': 'e-nuevo', 'En preparación': 'e-prep', 'Enviado': 'e-env', 'Listo para retiro': 'e-env', 'Entregado': 'e-ok', 'Cancelado': 'e-can'}[e] || 'e-nuevo');
+const pendientes = () => S.orders.filter(o => ['Recibido', 'En preparación'].includes(o.estado || 'Recibido'));
+
 function adminPage(){
-  const nMsg = (S.mensajes || []).length;
-  const tabs = [['productos','Productos'], ['pedidos',`Pedidos (${S.orders.length})`], ['mensajes',`Mensajes (${nMsg})`], ['banners','Banners de portada'], ['ajustes','Ajustes']]
-    .map(([k, t]) => `<button class="tab ${AD.tab === k ? 'on' : ''}" data-act="adTab" data-t="${k}" ${AD.tab === k ? 'aria-current="true"' : ''}>${t}</button>`).join('');
+  const agotados = PRODUCTS.filter(p => !stockTotal(p)).length;
+  const tabs = [
+    ['resumen', 'Resumen'],
+    ['productos', 'Productos'],
+    ['inventario', `Inventario${agotados ? ` (${agotados} agotados)` : ''}`],
+    ['pedidos', `Pedidos${pendientes().length ? ` (${pendientes().length} por preparar)` : ''}`],
+    ['mensajes', `Mensajes (${(S.mensajes || []).length})`],
+    ['banners', 'Banners de portada'],
+    ['ajustes', 'Ajustes']
+  ].map(([k, t]) => `<button class="tab ${AD.tab === k ? 'on' : ''}" data-act="adTab" data-t="${k}" ${AD.tab === k ? 'aria-current="true"' : ''}>${t}</button>`).join('');
   let body = '';
+  if (AD.tab === 'resumen') body = resumenPanel();
   if (AD.tab === 'productos') body = AD.edit ? formProducto() : listaProductos();
+  if (AD.tab === 'inventario') body = inventarioPanel();
   if (AD.tab === 'pedidos') body = listaPedidos();
   if (AD.tab === 'mensajes') body = listaMensajes();
   if (AD.tab === 'banners') body = formBanners();
   if (AD.tab === 'ajustes') body = ajustes();
   return `<h2>Panel del dueño</h2>
-    <p class="muted" style="margin-top:0">Los cambios se ven de inmediato en la tienda.</p>
+    <p class="muted" style="margin-top:0">Los cambios se guardan solos y se ven de inmediato en la tienda.</p>
     <div class="tabs">${tabs}</div>
     ${body}`;
 }
+
+/* Primera pantalla: lo importante del día, con botones grandes */
+function resumenPanel(){
+  const agotados = PRODUCTS.filter(p => !stockTotal(p));
+  const pocos = PRODUCTS.filter(p => stockTotal(p) && estadoStock(p).cls === 'poco');
+  const ocultos = PRODUCTS.filter(p => p.oculto).length;
+  const vendido = S.orders.filter(o => o.estado !== 'Cancelado').reduce((a, o) => a + o.total, 0);
+  const tarjeta = (n, txt, tab, cls, filtro = '') =>
+    `<button class="rcard ${cls}" data-act="adIr" data-t="${tab}" data-f="${filtro}"><b>${n}</b><span>${txt}</span><em>Ver →</em></button>`;
+  return `<div class="rgrid">
+      ${tarjeta(pendientes().length, 'pedidos por preparar', 'pedidos', pendientes().length ? 'alerta' : '')}
+      ${tarjeta(agotados.length, 'productos agotados', 'inventario', agotados.length ? 'peligro' : '', 'agotados')}
+      ${tarjeta(pocos.length, 'productos con poco stock', 'inventario', pocos.length ? 'alerta' : '', 'poco')}
+      ${tarjeta((S.mensajes || []).length, 'mensajes de clientas', 'mensajes', '')}
+      ${tarjeta(fmt(vendido), 'vendido en total', 'pedidos', '')}
+      ${tarjeta(PRODUCTS.length - ocultos, `productos a la venta${ocultos ? ` · ${ocultos} ocultos` : ''}`, 'productos', '')}
+    </div>
+    <div class="card guia">
+      <h3>¿Qué quieres hacer?</h3>
+      <ul>
+        <li><b>Llegó ropa nueva de un producto que ya existe:</b> ve a <button class="linkbtn" data-act="adIr" data-t="inventario">Inventario</button> y aprieta <b>+</b> en la talla que llegó.</li>
+        <li><b>Vender un producto nuevo:</b> ve a <button class="linkbtn" data-act="adIr" data-t="productos">Productos</button> → <b>Subir producto nuevo</b>.</li>
+        <li><b>Cambiar un precio o poner una oferta:</b> <b>Productos</b> → <b>Editar</b>.</li>
+        <li><b>Sacar un producto de la tienda sin borrarlo:</b> <b>Productos</b> → <b>Ocultar</b>. Lo puedes volver a mostrar cuando quieras.</li>
+        <li><b>Avisar que un pedido salió:</b> <button class="linkbtn" data-act="adIr" data-t="pedidos">Pedidos</button> → cambia el estado a <b>Enviado</b>. La clienta lo ve en "Mis pedidos".</li>
+      </ul>
+    </div>`;
+}
+
+/* Inventario: unidades por talla, con botones − y + que guardan solos */
+function filaInventario(p){
+  const e = estadoStock(p);
+  return `<div class="arow inv" data-buscar="${esc(p.name + ' ' + p.tipo + ' ' + p.color)}" data-estado="${e.cls}" data-id="${p.id}">
+      <div class="thumb" style="background:${p.bg};width:52px;height:66px">${pic(p)}</div>
+      <div class="grow inv-info">
+        <b>${esc(p.name)}</b>
+        <div><span class="chip-st ${e.cls}" id="est-${p.id}">${e.txt}</span> <span class="muted" id="tot-${p.id}">${stockTotal(p)} en total</span>${p.oculto ? ' <span class="chip-st oculto">Oculto</span>' : ''}</div>
+      </div>
+      <div class="inv-tallas">${sizesOf(p).map(s => `<div class="stcell">
+          <small>${s === 'Única' ? 'Unidades' : 'Talla ' + s}</small>
+          <div class="stctl">
+            <button type="button" data-act="stCambia" data-id="${p.id}" data-s="${s}" data-d="-1" aria-label="Quitar una unidad de ${esc(p.name)} talla ${s}">−</button>
+            <input type="number" inputmode="numeric" min="0" max="999" value="${stockDe(p, s)}" data-stock="${p.id}" data-s="${s}" aria-label="Unidades de ${esc(p.name)} talla ${s}" class="${stockDe(p, s) ? '' : 'cero'}">
+            <button type="button" data-act="stCambia" data-id="${p.id}" data-s="${s}" data-d="1" aria-label="Agregar una unidad de ${esc(p.name)} talla ${s}">+</button>
+          </div>
+        </div>`).join('')}</div>
+    </div>`;
+}
+function inventarioPanel(){
+  const f = AD.filtro || 'todos';
+  const cuenta = c => PRODUCTS.filter(p => c === 'todos' || estadoStock(p).cls === (c === 'agotados' ? 'agotado' : 'poco')).length;
+  const chips = [['todos', 'Todos'], ['poco', 'Poco stock'], ['agotados', 'Agotados']]
+    .map(([k, t]) => `<button class="chip ${f === k ? 'on' : ''}" data-act="adFiltro" data-f="${k}">${t} (${cuenta(k)})</button>`).join('');
+  const lista = PRODUCTS.filter(p => f === 'todos' || estadoStock(p).cls === (f === 'agotados' ? 'agotado' : 'poco'));
+  return `<div class="card" style="margin-bottom:12px">
+      <b>¿Cómo se usa?</b>
+      <p class="muted" style="margin:4px 0 0">Cada casilla es la cantidad que tienes de esa talla. Aprieta <b>+</b> cuando llegue ropa y <b>−</b> si se vendió en la tienda física. También puedes escribir el número. Se guarda solo. Si una talla queda en <b>0</b>, aparece tachada en la tienda.</p>
+    </div>
+    <div class="chips">${chips}</div>
+    <div class="btnrow" style="margin-bottom:12px">
+      <input id="adBuscar" type="search" class="adbuscar" placeholder="Buscar producto…" aria-label="Buscar producto en el inventario" autocomplete="off">
+      <span class="muted" id="adCuenta">${lista.length} productos</span>
+    </div>
+    <div class="card">${lista.length ? lista.map(filaInventario).join('') : '<p class="muted" style="margin:0">No hay productos en esta lista. ¡Bien!</p>'}</div>`;
+}
+/* Cambia el stock de una talla y actualiza la fila sin redibujar la página */
+function cambiarStock(id, s, valor){
+  const p = prodById(id);
+  if (!p) return;
+  const n = Math.max(0, Math.min(999, Math.floor(Number(valor) || 0)));
+  p.stock[s] = n;
+  guardarProductos();
+  const input = document.querySelector(`input[data-stock="${id}"][data-s="${s}"]`);
+  if (input) { input.value = n; input.classList.toggle('cero', !n); }
+  const e = estadoStock(p), chip = document.getElementById('est-' + id), tot = document.getElementById('tot-' + id);
+  if (chip) { chip.className = 'chip-st ' + e.cls; chip.textContent = e.txt; }
+  if (tot) tot.textContent = stockTotal(p) + ' en total';
+  toast(`${p.name} · ${s === 'Única' ? '' : 'talla ' + s + ': '}${n} ${n === 1 ? 'unidad' : 'unidades'}`);
+}
+
+/* Pedidos: el dueño cambia el estado y la clienta lo ve en "Mis pedidos" */
 function listaPedidos(){
   if (!S.orders.length) return '<div class="empty"><p>Todavía no hay pedidos.</p></div>';
-  const total = S.orders.reduce((a, o) => a + o.total, 0);
+  const validos = S.orders.filter(o => o.estado !== 'Cancelado');
+  const total = validos.reduce((a, o) => a + o.total, 0);
   return `<div class="stats">
-      <div class="card"><b>${S.orders.length}</b><span>pedidos</span></div>
+      <div class="card"><b>${validos.length}</b><span>pedidos</span></div>
       <div class="card"><b>${fmt(total)}</b><span>vendido</span></div>
-      <div class="card"><b>${fmt(Math.round(total / S.orders.length))}</b><span>ticket promedio</span></div>
+      <div class="card"><b>${fmt(validos.length ? Math.round(total / validos.length) : 0)}</b><span>ticket promedio</span></div>
     </div>
-    <div class="card">${S.orders.map(o => `<details class="ord-d">
-      <summary class="ord"><span><b>${esc(o.id)}</b> · ${esc(o.email || '')}<br><span class="muted">${esc(o.fecha)} · ${esc(METODOS[o.metodo] || '')} · ${o.retiro ? 'Retiro en tienda' : 'Despacho a ' + esc((o.datos && o.datos.comuna) || '')}${o.cupon ? ' · Cupón ' + esc(o.cupon) : ''}</span></span><b>${fmt(o.total)}</b></summary>
-      <div class="ord-items">${(o.items || []).map(it => `<div class="line"><span>${esc(it.nombre)} · ${esc(it.talla)} × ${it.qty}</span><span>${it.precio ? fmt(it.precio * it.qty) : ''}</span></div>`).join('')}
-        ${o.datos ? `<p class="muted" style="margin:6px 0 0">${esc(o.datos.nombre || '')} · ${esc(o.datos.tel || '')}${o.datos.dir ? ' · ' + esc(o.datos.dir) : ''}</p>` : ''}</div>
-    </details>`).join('')}</div>`;
+    <p class="muted">Cambia el estado de cada pedido para que la clienta sepa en qué va. Si lo cancelas, las unidades vuelven al inventario.</p>
+    <div class="card">${S.orders.map(o => { const est = o.estado || 'Recibido'; return `<div class="ped">
+      <div class="ped-top">
+        <div><b>${esc(o.id)}</b> · ${esc(o.email || '')}<br><span class="muted">${esc(o.fecha)} · ${esc(METODOS[o.metodo] || '')} · ${o.retiro ? 'Retiro en tienda' : 'Despacho a ' + esc((o.datos && o.datos.comuna) || '')}${o.cupon ? ' · Cupón ' + esc(o.cupon) : ''}</span></div>
+        <b>${fmt(o.total)}</b>
+      </div>
+      <label class="ped-estado">Estado
+        <select data-estado="${esc(o.id)}" class="${claseEstado(est)}">${ESTADOS.filter(e => o.retiro ? e !== 'Enviado' : e !== 'Listo para retiro').map(e => `<option ${e === est ? 'selected' : ''}>${e}</option>`).join('')}</select>
+      </label>
+      <details><summary>Ver productos y datos</summary>
+        <div class="ord-items">${(o.items || []).map(it => `<div class="line"><span>${esc(it.nombre)} · ${esc(it.talla)} × ${it.qty}</span><span>${it.precio ? fmt(it.precio * it.qty) : ''}</span></div>`).join('')}
+          ${o.datos ? `<p class="muted" style="margin:6px 0 0">${esc(o.datos.nombre || '')} · ${esc(o.datos.tel || '')}${o.datos.dir ? ' · ' + esc(o.datos.dir) : ''}</p>` : ''}</div>
+      </details>
+    </div>`; }).join('')}</div>`;
+}
+/* Cambiar estado; cancelar devuelve las unidades al inventario (y "des-cancelar" las vuelve a descontar) */
+function cambiarEstado(id, nuevo){
+  const o = S.orders.find(x => x.id === id);
+  if (!o) return;
+  const antes = o.estado || 'Recibido';
+  if (antes === nuevo) return;
+  const mover = signo => (o.items || []).forEach(it => {
+    const p = it.id ? prodById(it.id) : PRODUCTS.find(x => x.name === it.nombre);
+    if (p && sizesOf(p).includes(it.talla)) p.stock[it.talla] = Math.max(0, stockDe(p, it.talla) + signo * it.qty);
+  });
+  if (nuevo === 'Cancelado') mover(+1);
+  if (antes === 'Cancelado') mover(-1);
+  o.estado = nuevo;
+  S.prods = PRODUCTS;
+  if (!save()) toast(SIN_ESPACIO);
+  else toast(nuevo === 'Cancelado' ? `Pedido ${id} cancelado: las unidades volvieron al inventario` : `Pedido ${id}: ${nuevo}`);
+  render();
 }
 function listaMensajes(){
   const msgs = S.mensajes || [], subs = S.news || [];
@@ -1274,7 +1492,7 @@ function listaMensajes(){
         <div><b>${esc(m.nombre)}</b> · <a class="linkbtn" href="mailto:${esc(m.email)}">${esc(m.email)}</a> <span class="muted">· ${esc(m.fecha)}</span></div>
         <div class="muted">${esc(m.motivo)}</div>
         <p>${esc(m.mensaje)}</p>
-      </div>`).join('')}</div>` : '<div class="empty"><p>No hay mensajes de clientes.</p></div>'}`;
+      </div>`).join('')}</div>` : '<div class="empty"><p>No hay mensajes de clientas.</p></div>'}`;
 }
 function listaProductos(){
   return `<div class="btnrow" style="margin-bottom:12px;align-items:center">
@@ -1282,24 +1500,28 @@ function listaProductos(){
       <input id="adBuscar" type="search" class="adbuscar" placeholder="Buscar en mis productos…" aria-label="Buscar en mis productos" autocomplete="off">
       <span class="muted" id="adCuenta">${PRODUCTS.length} productos</span>
     </div>
-    <div class="card">${PRODUCTS.map(p => `<div class="arow" data-buscar="${esc(p.name + ' ' + p.tipo + ' ' + p.color + ' ' + p.marca)}">
+    <div class="card">${PRODUCTS.map(p => { const e = estadoStock(p); return `<div class="arow ${p.oculto ? 'apagado' : ''}" data-buscar="${esc(p.name + ' ' + p.tipo + ' ' + p.color + ' ' + p.marca)}">
       <div class="thumb" style="background:${p.bg};width:60px;height:76px">${pic(p)}</div>
       <div class="grow">
         <b>${esc(p.name)}</b>
         <div class="muted">${esc(p.tipo)} · ${esc(p.color)} · ${esc(p.marca)}${p.destacado ? ' · <b>En portada</b>' : ''}</div>
         <div>${fmt(p.price)} ${p.old ? `<s class="muted">${fmt(p.old)}</s> <span class="pct">oferta -${disc(p)}%</span>` : '<span class="muted">sin oferta</span>'}</div>
+        <div style="margin-top:4px"><span class="chip-st ${e.cls}">${e.txt} · ${stockTotal(p)} u.</span>${p.oculto ? ' <span class="chip-st oculto">Oculto en la tienda</span>' : ''}</div>
       </div>
       <div class="acts">
         <button class="btn ghost sm2" data-act="adEditar" data-id="${p.id}">Editar</button>
+        <button class="btn ghost sm2" data-act="adOcultar" data-id="${p.id}">${p.oculto ? 'Mostrar' : 'Ocultar'}</button>
         <button class="btn ghost sm2" data-act="adBorrar" data-id="${p.id}">Borrar</button>
       </div>
-    </div>`).join('')}</div>`;
+    </div>`; }).join('')}</div>`;
 }
 function formProducto(){
   const p = AD.edit === 'nuevo' ? null : prodById(AD.edit);
   if (AD.edit !== 'nuevo' && !p) { AD.edit = null; return listaProductos(); }
-  const v = p || {name:'', tipo:CATS[0].t, color:'', marca:MARCAS[0], price:'', old:0, destacado:false, img:''};
+  const v = p || {name:'', tipo:CATS[0].t, color:'', marca:MARCAS[0], price:'', old:0, destacado:false, oculto:false, img:'', stock:{}};
   const foto = fotoNueva || (p ? p.img : '');
+  const esUnica = v.tipo === 'Accesorios';
+  const campo = s => `<label class="stfield">${s === 'Única' ? 'Unidades' : s}<input name="st_${s}" type="number" inputmode="numeric" min="0" max="999" step="1" value="${(v.stock && v.stock[s]) || 0}"></label>`;
   return `<div class="card">
     <h3>${p ? 'Editar producto' : 'Producto nuevo'}</h3>
     <form id="fProducto" class="form">
@@ -1310,7 +1532,14 @@ function formProducto(){
       <label>Precio de venta (pesos)<input name="price" type="number" min="1" max="9999999" step="1" required value="${v.price}" placeholder="Ej: 12990"></label>
       <label>Precio anterior tachado (solo si está en oferta)<input name="old" type="number" min="0" max="9999999" step="1" value="${v.old || ''}" placeholder="Déjalo vacío si no hay oferta"></label>
       <p class="muted" style="margin:-4px 0 0">Para poner un producto en oferta, escribe el precio anterior más alto que el precio de venta.</p>
+      <fieldset class="stbox">
+        <legend>¿Cuántas unidades tienes?</legend>
+        <div class="stgrid st-ropa" ${esUnica ? 'hidden' : ''}>${SIZES.map(campo).join('')}</div>
+        <div class="stgrid st-unica" ${esUnica ? '' : 'hidden'}>${campo('Única')}</div>
+        <p class="muted" style="margin:6px 0 0">Si una talla está en 0, aparece agotada en la tienda.</p>
+      </fieldset>
       <label class="radio"><input type="checkbox" name="destacado" ${v.destacado ? 'checked' : ''}> Mostrar en la portada</label>
+      <label class="radio"><input type="checkbox" name="oculto" ${v.oculto ? 'checked' : ''}> Ocultar de la tienda (no se borra, solo no se muestra)</label>
       <div>
         <b>Foto del producto</b>
         <p class="muted" style="margin:4px 0 8px">Arrastra una foto desde tu escritorio a la caja, o haz clic en ella.</p>
@@ -1394,7 +1623,7 @@ function render(){
   prevKey = key;
   const p = path === 'producto' ? prodById(Number(r.qs.get('id'))) : null;
   document.title = (p ? p.name : (TITULOS[path] || TITULOS.inicio)) + ' · Tiendas Urbano';
-  S.cart = S.cart.filter(i => prodById(i.id));   /* quita lo que el dueño ya borró */
+  if (ajustarCarrito()) toast('Actualizamos tu carrito: algunos productos ya no tienen stock suficiente');
   const lb = document.querySelector('.lightbox');   /* cerrar la foto ampliada al cambiar de página */
   if (lb && cambio) { lb.remove(); document.body.style.overflow = ''; }
   if (path === 'admin') {
@@ -1412,8 +1641,26 @@ function render(){
 }
 
 /* ===================== ACCIONES ===================== */
+/* Ajusta el carrito al stock real: quita lo borrado, oculto o agotado y baja cantidades que ya no alcanzan.
+   Devuelve true si cambió algo. */
+function ajustarCarrito(){
+  let cambio = false;
+  S.cart = S.cart.filter(i => {
+    const p = prodById(i.id);
+    const tope = p && !p.oculto ? Math.min(MAXQ, stockDe(p, i.size)) : 0;
+    if (i.qty > tope) { cambio = true; i.qty = tope; }
+    return i.qty > 0;
+  });
+  if (cambio) save();
+  return cambio;
+}
 function pagar(){
   if (!S.cart.length) { render(); return; }   /* evita pedidos vacíos (doble clic, otra pestaña) */
+  if (ajustarCarrito()) {                       /* el stock cambió mientras pagaba */
+    toast('El stock cambió: revisa tu carrito antes de pagar');
+    location.hash = '#/carrito';
+    return;
+  }
   const t = totales(retiro);
   const o = {
     id: 'UR-' + Math.floor(100000 + Math.random() * 900000),
@@ -1426,8 +1673,12 @@ function pagar(){
     metodo: pagoSel,
     fecha: new Date().toLocaleDateString('es-CL'),
     datos,
-    items: S.cart.map(i => ({nombre: prodById(i.id).name, talla: i.size, qty: i.qty, precio: prodById(i.id).price}))
+    estado: 'Recibido',
+    items: S.cart.map(i => ({id: i.id, nombre: prodById(i.id).name, talla: i.size, qty: i.qty, precio: prodById(i.id).price}))
   };
+  /* Descontar del stock lo vendido */
+  S.cart.forEach(i => { const p = prodById(i.id); p.stock[i.size] = Math.max(0, stockDe(p, i.size) - i.qty); });
+  S.prods = PRODUCTS;
   S.orders.unshift(o);
   S.cart = [];
   S.cupon = '';   /* el cupón se usa una vez por compra */
@@ -1453,13 +1704,19 @@ const ACT = {
     if (!p || !sizeOk(p, el.dataset.s)) { toast('Esa talla está agotada'); return; }
     pSize = el.dataset.s; pAdded = false; render();
   },
-  pqty(el){ pQty = Math.min(MAXQ, Math.max(1, pQty + Number(el.dataset.d))); render(); },
+  pqty(el){
+    const p = prodById(pId);
+    const tope = p && pSize ? Math.max(1, maxAgregable(p, pSize)) : 1;
+    const nuevo = pQty + Number(el.dataset.d);
+    if (nuevo > tope) { toast(`Solo hay ${tope} disponible${tope === 1 ? '' : 's'} para agregar en esta talla`); return; }
+    pQty = Math.max(1, nuevo); render();
+  },
   agregarPdp(){
     const p = prodById(pId);
     if (!p || !pSize) { toast('Elige una talla primero'); return; }
     const n = addCart(p.id, pSize, pQty);
-    if (!n) toast(`Ya tienes el máximo de ${MAXQ} unidades de esta talla en el carrito`);
-    else if (n < pQty) toast(`Solo se agregaron ${n}: el máximo es ${MAXQ} por talla`);
+    if (!n) toast(stockDe(p, pSize) ? 'Ya tienes en tu carrito todas las unidades disponibles de esta talla' : 'Esa talla está agotada');
+    else if (n < pQty) toast(`Solo se agregaron ${n}: es lo que queda disponible`);
     else toast(`Agregado: ${p.name} · Talla ${pSize}`);
     pAdded = n > 0; pQty = 1;
     render();
@@ -1467,14 +1724,15 @@ const ACT = {
   comprarYa(){
     const p = prodById(pId);
     if (!p || !pSize) { toast('Elige una talla primero'); return; }
-    addCart(p.id, pSize, pQty);
+    if (!addCart(p.id, pSize, pQty) && !enCarroDe(p.id, pSize)) { toast('Esa talla está agotada'); return; }
     location.hash = '#/checkout';
   },
   qty(el){
     const it = findLine(el);
     if (!it) return;
     const d = Number(el.dataset.d);
-    if (d > 0 && it.qty >= MAXQ) { toast(`El máximo es ${MAXQ} unidades por talla`); return; }
+    const tope = Math.min(MAXQ, stockDe(prodById(it.id), it.size));
+    if (d > 0 && it.qty >= tope) { toast(tope >= MAXQ ? `El máximo es ${MAXQ} unidades por talla` : `Solo quedan ${tope} en stock de esta talla`); return; }
     it.qty += d;
     if (it.qty < 1) { S.cart = S.cart.filter(i => i !== it); toast('Producto eliminado del carrito'); }
     save(); render();
@@ -1500,6 +1758,17 @@ const ACT = {
   logout(){ S.session = null; save(); toast('Sesión cerrada'); location.hash = '#/inicio'; render(); },
   olvide(){ toast('Simulado: en el prototipo no se envían correos.'); },
   adTab(el){ AD.tab = el.dataset.t; AD.edit = null; render(); },
+  adIr(el){ AD.tab = el.dataset.t; AD.edit = null; AD.filtro = el.dataset.f || 'todos'; render(); window.scrollTo(0, 0); },
+  adFiltro(el){ AD.filtro = el.dataset.f; render(); },
+  adOcultar(el, id){
+    const p = prodById(id);
+    if (!p) return;
+    p.oculto = !p.oculto;
+    guardarProductos();
+    toast(p.oculto ? `"${p.name}" ya no se muestra en la tienda` : `"${p.name}" vuelve a estar a la venta`);
+    render();
+  },
+  stCambia(el, id){ const p = prodById(id); if (p) cambiarStock(id, el.dataset.s, stockDe(p, el.dataset.s) + Number(el.dataset.d)); },
   adNuevo(){ AD.edit = 'nuevo'; fotoNueva = null; render(); },
   adEditar(el, id){ AD.edit = id; fotoNueva = null; render(); },
   adCancelar(){ AD.edit = null; fotoNueva = null; render(); },
@@ -1514,6 +1783,7 @@ const ACT = {
     if (!confirm('¿Volver a los productos y banners originales? Se perderán tus cambios.')) return;
     S.prods = null; S.slides = null; save();
     PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+    PRODUCTS.forEach(prepararStock);
     SLIDES = JSON.parse(JSON.stringify(DEFAULT_SLIDES));
     toast('Tienda restaurada'); render();
   },
@@ -1578,6 +1848,7 @@ window.addEventListener('storage', e => {
   try { S = JSON.parse(e.newValue) || {}; } catch(err) { return; }
   S.users ||= []; S.cart ||= []; S.fav ||= []; S.orders ||= []; S.session ??= null; S.admin ??= false;
   PRODUCTS = S.prods || JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  PRODUCTS.forEach(prepararStock);
   SLIDES = S.slides || JSON.parse(JSON.stringify(DEFAULT_SLIDES));
   render();
 });
@@ -1625,6 +1896,14 @@ document.addEventListener('change', e => {
     return;
   }
   if (e.target.name === 'pago') { pagoSel = e.target.value; return; }
+  if (e.target.dataset && e.target.dataset.stock) { cambiarStock(Number(e.target.dataset.stock), e.target.dataset.s, e.target.value); return; }
+  if (e.target.dataset && e.target.dataset.estado) { cambiarEstado(e.target.dataset.estado, e.target.value); return; }
+  if (e.target.name === 'tipo' && e.target.form && e.target.form.id === 'fProducto') {
+    const unica = e.target.value === 'Accesorios';
+    e.target.form.querySelector('.st-ropa').hidden = unica;
+    e.target.form.querySelector('.st-unica').hidden = !unica;
+    return;
+  }
   /* Domicilio o retiro: guarda lo ya escrito antes de redibujar */
   if (e.target.name === 'entrega') {
     const f = e.target.form;
@@ -1650,7 +1929,7 @@ document.addEventListener('submit', e => {
 
   if (f.id === 'fAdminLogin') {
     if (d.email === DUENO.email && d.pass === DUENO.pass) {
-      S.admin = true; save(); adminErr = ''; AD = {tab: 'productos', edit: null};
+      S.admin = true; save(); adminErr = ''; AD = {tab: 'resumen', edit: null, filtro: 'todos'};
       toast('Bienvenido al panel'); render();
     } else { adminErr = 'Correo o contraseña incorrectos.'; render(); }
     return;
@@ -1665,18 +1944,25 @@ document.addEventListener('submit', e => {
     const cat = CATALOGO.find(c => c.tipo === d.tipo);
     const base = {
       name: d.name.trim(), tipo: d.tipo, color: (d.color || '').trim() || 'Único', marca: d.marca,
-      price, old: old > price ? old : 0, destacado: !!d.destacado, bg: cat ? cat.bg : '#eee'
+      price, old: old > price ? old : 0, destacado: !!d.destacado, oculto: !!d.oculto, bg: cat ? cat.bg : '#eee'
     };
+    /* Stock según las tallas de la categoría elegida */
+    const stock = {};
+    sizesOf(base).forEach(s => { stock[s] = Math.max(0, Math.min(999, Math.floor(Number(d['st_' + s]) || 0))); });
+    base.stock = stock;
+    const sinStock = !Object.values(stock).some(Boolean);
+    let msg;
     if (AD.edit === 'nuevo') {
       const id = Math.max(0, ...PRODUCTS.map(p => p.id)) + 1;
       PRODUCTS.push({id, ...base, img: fotoNueva || ''});
-      toast('Producto subido a la tienda');
+      msg = 'Producto subido a la tienda';
     } else {
       const p = prodById(AD.edit);
       Object.assign(p, base);
       if (fotoNueva) p.img = fotoNueva;
-      toast('Cambios guardados');
+      msg = 'Cambios guardados';
     }
+    toast(sinStock ? msg + '. Ojo: no tiene stock, se verá como agotado' : base.oculto ? msg + ' (oculto en la tienda)' : msg);
     fotoNueva = null; AD.edit = null;
     guardarProductos(); render(); window.scrollTo(0, 0);
     return;
