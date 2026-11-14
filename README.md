@@ -2,7 +2,7 @@
 
 Prototipo funcional de una tienda de ropa femenina online para la empresa ficticia **Tiendas Urbano**, desarrollado para el curso de **Ingeniería de Requisitos**.
 
-🔗 **Ver la página:** https://cuentaduoc1211.github.io/tiendas-urbano/
+🔗 **Ver la página:** https://benjaduocuc.github.io/tiendas-urbano/
 
 > Es un prototipo: los pagos, correos y envíos son **simulados**. Los datos (cuentas, carrito, pedidos) se guardan solo en el navegador de quien lo usa.
 
