@@ -127,7 +127,9 @@ nav.menu a.on::after{content:"";position:absolute;bottom:-4px;left:0;right:0;hei
 .heart.on svg{fill:var(--pink-strong)}
 .pinfo{padding:12px;display:flex;flex-direction:column;flex:1}
 .brand{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
-.pinfo h4{margin:2px 0 6px;font-size:14px;line-height:1.25}
+/* Nombre siempre en 2 líneas de alto: así precios y botones quedan alineados entre tarjetas */
+.pinfo h4{margin:2px 0 6px;font-size:14px;line-height:1.25;min-height:2.5em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pinfo .prices{min-height:22px;margin-bottom:10px}
 .pinfo h4 a:hover{color:var(--blue)}
 .prices b{color:var(--blue);font-size:16px}
 .prices s{color:var(--muted);font-size:13px;margin-left:6px}
@@ -417,53 +419,53 @@ const CATALOGO = [
     ['Polera Blanca Estampada','Blanco',8990,11990],
     ['Polera Blanca Básica','Blanco',6990,9990],
     ['Polera Rosa Oversize','Rosado',8490,0],
-    ['Polera Negra Oversize','Negro',8990,0],
+    ['Blusa Blanca Drapeada','Blanco',13990,17990],
     ['Polera Blanca Oversize','Blanco',8490,10990],
     ['Polera Café Básica','Café',6990,0],
     ['Blusa Rosa Palo','Rosado',12990,16990],
-    ['Blusa Off Shoulder Crema','Crema',13990,0],
-    ['Camisa Blanca Clásica','Blanco',14990,18990],
+    ['Polera Manga Larga Blanca','Blanco',9990,0],
+    ['Blusa Verde Salvia','Verde',14990,18990],
     ['Camisa Celeste Oversize','Celeste',13990,0]
   ]},
   {slug:'vestidos', tipo:'Vestidos', bg:'#fbd5e0', items:[
     ['Vestido Floral Rosa','Rosado',18990,24990],
     ['Vestido Floral Azul','Azul',19990,0],
-    ['Vestido Largo Floral Beige','Beige',21990,27990],
+    ['Vestido Largo Floral','Multicolor',21990,27990],
     ['Vestido Floral Romántico','Multicolor',17990,0],
-    ['Vestido Estampado Tropical','Multicolor',19990,24990],
+    ['Vestido Celeste Ajustado','Celeste',17990,22990],
     ['Vestido Negro Floral','Negro',18990,0],
     ['Vestido Negro Midi','Negro',22990,27990],
     ['Vestido Coral Strapless','Coral',16990,0],
-    ['Vestido Rojo Largo','Rojo',24990,32990],
+    ['Vestido Blanco Manga Larga','Blanco',22990,29990],
     ['Vestido Negro de Encaje','Negro',21990,0]
   ]},
   {slug:'pantalones', tipo:'Pantalones', bg:'#cfe0f5', items:[
-    ['Jeans Mom Azul','Azul',17990,22990],
+    ['Jeans Mom Celeste','Celeste',17990,22990],
     ['Jeans Rectos Celeste','Celeste',18990,0],
-    ['Jeans Anchos Azul Oscuro','Azul',19990,24990],
-    ['Jeans Celeste Tiro Alto','Celeste',17990,0],
+    ['Pantalón Café Tiro Alto','Café',19990,24990],
+    ['Jeans Rectos Azul','Azul',17990,0],
     ['Pantalón Cargo Celeste','Celeste',15990,0],
-    ['Pantalón Cargo Tiro Alto','Celeste',16990,21990],
+    ['Pantalón Negro Acampanado','Negro',16990,21990],
     ['Jeans Acampanados Azul','Azul',18990,0],
     ['Pantalón Negro Ancho','Negro',16990,0],
     ['Pantalón Verde Oliva','Verde',15990,18990],
-    ['Jeans Anchos Azul Claro','Azul',19990,24990]
+    ['Jeans Azul Oscuro Tiro Alto','Azul',19990,24990]
   ]},
   {slug:'faldas', tipo:'Faldas', bg:'#fde7c9', items:[
     ['Falda Floral Corta','Multicolor',12990,16990],
     ['Falda Mini Beige','Beige',11990,0],
     ['Falda Midi Gris','Gris',14990,0],
     ['Falda Larga Negra','Negro',15990,19990],
-    ['Falda Larga Roja con Abertura','Rojo',16990,0],
-    ['Falda de Tul Negra','Negro',17990,22990],
+    ['Falda Lápiz Negra','Negro',14990,0],
+    ['Falda Corta Negra','Negro',11990,15990],
     ['Falda Larga Blanca','Blanco',13990,0],
-    ['Falda Midi de Encaje','Blanco',15490,18990],
+    ['Falda Plisada Gris','Gris',13990,17990],
     ['Falda Denim Corta','Azul',10990,0],
-    ['Falda Denim Azul Larga','Azul',15990,0]
+    ['Falda Midi Crema','Crema',15990,0]
   ]},
   {slug:'chaquetas', tipo:'Chaquetas', bg:'#d7dbe6', items:[
-    ['Blazer Rosa','Rosado',24990,31990],
-    ['Traje Verde Menta','Verde',26990,0],
+    ['Blazer Verde Menta','Verde',24990,31990],
+    ['Blazer Rosa Cruzado','Rosado',26990,0],
     ['Blazer Blanco','Blanco',22990,28990],
     ['Chaqueta Café Oversize','Café',21990,0],
     ['Traje Negro Clásico','Negro',29990,0],
@@ -475,9 +477,9 @@ const CATALOGO = [
   ]},
   {slug:'accesorios', tipo:'Accesorios', bg:'#e3d6c4', items:[
     ['Bolso Tote Blanco','Blanco',22990,28990],
-    ['Bolso Verde Menta','Verde',19990,0],
-    ['Bolso Café Estructurado','Café',24990,29990],
-    ['Bolso Rosa Pastel','Rosado',18990,0],
+    ['Cartera Negra Clásica','Negro',19990,0],
+    ['Bolso Rojo Estructurado','Rojo',24990,29990],
+    ['Bolso Verde Fruncido','Verde',18990,0],
     ['Cartera Gris Metalizada','Gris',21990,0],
     ['Bolso Amarillo Fruncido','Amarillo',17990,22990],
     ['Cartera Naranja Clásica','Naranja',23990,0],
@@ -491,11 +493,11 @@ const CATALOGO = [
     ['Top y Calza Rosa','Rosado',19990,24990],
     ['Conjunto Deportivo Negro','Negro',21990,0],
     ['Musculosa Deportiva Turquesa','Turquesa',9990,12990],
-    ['Calza Negra Tiro Alto','Negro',12990,0],
+    ['Conjunto Petróleo Manga Larga','Azul',21990,0],
     ['Top Deportivo Gris','Gris',9490,11990],
     ['Conjunto Deportivo Naranja','Naranja',21990,0],
-    ['Top Deportivo Rojo','Rojo',9990,12990],
-    ['Calza Negra con Polerón','Negro',18990,0]
+    ['Top y Calza Verde Oliva','Verde',19990,24990],
+    ['Top y Short Deportivo Negro','Negro',15990,0]
   ]}
 ];
 /* Marcas ficticias (no son marcas reales) */
@@ -658,7 +660,7 @@ function card(p){
       <span class="brand">${esc(p.marca)}</span>
       <h4><a href="#/producto?id=${p.id}">${esc(p.name)}</a></h4>
       <div class="prices"><b>${fmt(p.price)}</b>${p.old ? `<s>${fmt(p.old)}</s>` : ''}</div>
-      <a class="btn sm" href="#/producto?id=${p.id}" style="margin-top:10px">${svg('cart')} Agregar</a>
+      <a class="btn sm" href="#/producto?id=${p.id}">${svg('cart')} Agregar</a>
     </div>
   </article>`;
 }
