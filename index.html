@@ -418,10 +418,10 @@ const CATALOGO = [
   {slug:'poleras', tipo:'Poleras y Tops', bg:'#e8e4f0', items:[
     ['Polera Blanca Estampada','Blanco',8990,11990],
     ['Polera Blanca Básica','Blanco',6990,9990],
-    ['Polera Rosa Oversize','Rosado',8490,0],
+    ['Polera Rosa Básica','Rosado',8490,0],
     ['Blusa Blanca Drapeada','Blanco',13990,17990],
     ['Polera Blanca Oversize','Blanco',8490,10990],
-    ['Polera Café Básica','Café',6990,0],
+    ['Polera Negra Básica','Negro',6990,0],
     ['Blusa Rosa Palo','Rosado',12990,16990],
     ['Polera Manga Larga Blanca','Blanco',9990,0],
     ['Blusa Verde Salvia','Verde',14990,18990],
@@ -435,7 +435,7 @@ const CATALOGO = [
     ['Vestido Celeste Ajustado','Celeste',17990,22990],
     ['Vestido Negro Floral','Negro',18990,0],
     ['Vestido Negro Midi','Negro',22990,27990],
-    ['Vestido Coral Strapless','Coral',16990,0],
+    ['Vestido Rosa Cruzado','Rosado',16990,0],
     ['Vestido Blanco Manga Larga','Blanco',22990,29990],
     ['Vestido Negro de Encaje','Negro',21990,0]
   ]},
@@ -449,10 +449,10 @@ const CATALOGO = [
     ['Jeans Acampanados Azul','Azul',18990,0],
     ['Pantalón Negro Ancho','Negro',16990,0],
     ['Pantalón Verde Oliva','Verde',15990,18990],
-    ['Jeans Azul Oscuro Tiro Alto','Azul',19990,24990]
+    ['Jeans Skinny Azul','Azul',19990,24990]
   ]},
   {slug:'faldas', tipo:'Faldas', bg:'#fde7c9', items:[
-    ['Falda Floral Corta','Multicolor',12990,16990],
+    ['Falda Floral Azul','Azul',12990,16990],
     ['Falda Mini Beige','Beige',11990,0],
     ['Falda Midi Gris','Gris',14990,0],
     ['Falda Larga Negra','Negro',15990,19990],
@@ -481,7 +481,7 @@ const CATALOGO = [
     ['Bolso Rojo Estructurado','Rojo',24990,29990],
     ['Bolso Verde Fruncido','Verde',18990,0],
     ['Cartera Gris Metalizada','Gris',21990,0],
-    ['Bolso Amarillo Fruncido','Amarillo',17990,22990],
+    ['Cartera Roja Croco','Rojo',17990,22990],
     ['Cartera Naranja Clásica','Naranja',23990,0],
     ['Clutch de Fiesta Brillante','Rosado',15990,19990],
     ['Clutch Dorado','Dorado',16990,0],
@@ -496,7 +496,7 @@ const CATALOGO = [
     ['Conjunto Petróleo Manga Larga','Azul',21990,0],
     ['Top Deportivo Gris','Gris',9490,11990],
     ['Conjunto Deportivo Naranja','Naranja',21990,0],
-    ['Top y Calza Verde Oliva','Verde',19990,24990],
+    ['Top Rosa y Calza Gris','Rosado',19990,24990],
     ['Top y Short Deportivo Negro','Negro',15990,0]
   ]}
 ];
@@ -512,15 +512,17 @@ const DESC = {
   'Ropa Deportiva': 'Prenda de tejido elástico y transpirable, pensada para entrenar y para el uso diario.'
 };
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+/* Subir este número cada vez que se cambien fotos: obliga a los navegadores a bajar las nuevas */
+const VERSION_FOTOS = 3;
 let _id = 0;
 const DEFAULT_PRODUCTS = CATALOGO.flatMap(c => c.items.map(([name, color, price, old], i) => ({
   id: ++_id, name, color, price, old, tipo: c.tipo, bg: c.bg, destacado: [2, 7, 11, 41].includes(_id),
   marca: MARCAS[(_id - 1) % MARCAS.length],
-  img: `img/productos/${c.slug}-${i + 1}.jpg`
+  img: `img/productos/${c.slug}-${i + 1}.jpg?v=${VERSION_FOTOS}`
 })));
 /* Foto que se usa en el círculo de cada categoría (por defecto la primera) */
 const CIRCULO = {pantalones: 2, deportiva: 3};
-const CATS = CATALOGO.map(c => ({t: c.tipo, img: `img/productos/${c.slug}-${CIRCULO[c.slug] || 1}.jpg`, bg: c.bg}));
+const CATS = CATALOGO.map(c => ({t: c.tipo, img: `img/productos/${c.slug}-${CIRCULO[c.slug] || 1}.jpg?v=${VERSION_FOTOS}`, bg: c.bg}));
 const colores = () => [...new Set(PRODUCTS.map(p => p.color))].sort();
 
 const DEFAULT_SLIDES = [
